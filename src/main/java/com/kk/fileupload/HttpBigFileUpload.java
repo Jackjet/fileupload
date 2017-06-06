@@ -26,25 +26,16 @@ import rx.functions.Action1;
  * Created by zhangkai on 2017/5/23.
  */
 
-public class HttpBigFileUpload {
-    private Context context;
+public class HttpBigFileUpload extends IBigFileUpload {
 
-    private String md5Check;     //文件唯一标识
-    private int readSize = 1024; //每次读取大小
-    private int chunkLength = 1024 * 1024 * 2; //分片字节数
-    private File bigFile; //大文件
     private String url;
-
-
+    private int chunkLength = 1024 * 1024 * 2; //分片字节数
     private int chunkRetry = 2; //重试次数
 
     private List<ChunkInfo> chunkInfos = new ArrayList<>(); //分片信息
     private int chunks = 1; //分片数量
 
-    private RandomAccessFile randomAccessFile;
     private int retryTimes = 0;
-
-
     private int uploadNums = 0;
 
 
@@ -52,33 +43,20 @@ public class HttpBigFileUpload {
     private int successNums = 0;
 
     public HttpBigFileUpload(Builder builder) {
+        super(builder);
         this.chunkLength = builder.chunkLength;
-        this.context = builder.context;
-        this.bigFile = builder.bigFile;
         this.url = builder.url;
         this.chunkRetry = builder.chunkRetry;
-        this.readSize = builder.readSize;
-        this.listener = builder.listener;
         this.maxThreadsNums = builder.maxThreadsNums;
-        md5Check = Md5.md5(bigFile.getName() + bigFile.length());
-        setRandomAccessFile();
         setChunkInfos();
         uploadIndexs = readRecord();
         successNums = uploadIndexs.size();
     }
 
-    public static class Builder {
-        private Context context;
-
+    public static class Builder extends IBigFileUpload.Builder {
         private int chunkLength = 1024 * 1024 * 2; //分片字节数
-        private File bigFile; //大文件
-        private int readSize = 1024;//每次读取大小
         private int chunkRetry = 2; //重试次数
         private int maxThreadsNums = 8; //上传最大线程数
-
-
-        private BigFileUploadListener listener;
-
         private String url;
 
         public Builder setChunkLength(int chunkLength) {
@@ -132,7 +110,6 @@ public class HttpBigFileUpload {
         private int size;
     }
 
-
     private byte[] getBufferByChunkInfo(ChunkInfo chunkInfo) {
         byte[] buffer = null;
         int read;
@@ -155,13 +132,6 @@ public class HttpBigFileUpload {
         return buffer;
     }
 
-    private void setRandomAccessFile() {
-        try {
-            randomAccessFile = new RandomAccessFile(bigFile, "r");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
 
     private void saveRecord(String index) {
         String record = PreferenceUtil.getImpl(context).getString(md5Check, "");
@@ -212,14 +182,14 @@ public class HttpBigFileUpload {
         upFileInfo2.name = md5Check;
         upFileInfo2.filename = md5Check;
         upFileInfo2.buffer = getBufferByChunkInfo(chunkInfo);
-        HttpCoreEngin.get(context).rxuploadFile(url, new TypeReference<ResultInfo<String>>() {
+        HttpCoreEngin.get(context).rxuploadFile(url, new TypeReference<ResultInfo>() {
                 }.getType(), upFileInfo2,
                 params,
                 false)
                 .subscribe
-                        (new Action1<ResultInfo<String>>() {
+                        (new Action1<ResultInfo>() {
                             @Override
-                            public void call(ResultInfo<String> resultInfo) {
+                            public void call(final ResultInfo resultInfo) {
                                 synchronized (HttpBigFileUpload.class) {
                                     uploadNums++;
                                     if (resultInfo.code == HttpConfig.STATUS_OK) {
@@ -230,7 +200,7 @@ public class HttpBigFileUpload {
                                                     (float) chunks);
                                         }
                                     }
-                                    done();
+                                    done(resultInfo);
                                 }
                             }
                         }, new Action1<Throwable>() {
@@ -238,7 +208,7 @@ public class HttpBigFileUpload {
                             public void call(Throwable throwable) {
                                 synchronized (HttpBigFileUpload.class) {
                                     uploadNums++;
-                                    done();
+                                    done(null);
                                 }
                             }
                         });
@@ -252,27 +222,27 @@ public class HttpBigFileUpload {
         }
     }
 
-    private void callback() {
+    private void callback(ResultInfo resultInfo) {
         if (uploadNums >= chunks) {
             uploadNums = 0;
             if (successNums >= chunks) {
                 successNums = 0;
                 clearRecord();
                 if (listener != null) {
-                    listener.success();
+                    listener.success(toResponseInfo(resultInfo));
                 }
             } else {
                 if (listener != null) {
-                    listener.failure();
+                    listener.failure(toResponseInfo(resultInfo));
                 }
             }
         }
     }
 
-    private void done() {
+    private void done(ResultInfo resultInfo) {
         upload2();
         retry();
-        callback();
+        callback(resultInfo);
     }
 
 
@@ -286,6 +256,8 @@ public class HttpBigFileUpload {
         }
     }
 
+
+    @Override
     public void upload() {
         int start = times * maxThreadsNums;
         for (int i = start; i < start + maxThreadsNums && i < chunkInfos.size(); i++) {
@@ -302,14 +274,5 @@ public class HttpBigFileUpload {
         }
     }
 
-    private BigFileUploadListener listener;
-
-    public interface BigFileUploadListener {
-        void success();
-
-        void failure();
-
-        void process(float percent);
-    }
 
 }
