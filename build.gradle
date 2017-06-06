@@ -32,6 +32,6 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:25.3.1'
     testCompile 'junit:junit:4.12'
-    compile 'com.kk:securityhttp:1.0.16'
+    compile 'com.kk:securityhttp:1.0.18'
     compile 'com.kk:utils:1.0.0'
 }

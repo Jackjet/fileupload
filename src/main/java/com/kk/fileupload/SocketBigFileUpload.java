@@ -21,6 +21,8 @@ import java.math.BigInteger;
 import java.net.Socket;
 import java.security.MessageDigest;
 
+import rx.Observable;
+
 /**
  * Created by zhangkai on 2017/5/24.
  */
@@ -90,28 +92,34 @@ public class SocketBigFileUpload extends IBigFileUpload {
                 try {
                     int offset = (int) resultInfo.package_index;
                     randomAccessFile.seek(offset);
+                    readLength = offset;
                     byte[] buffer = new byte[readSize];
-                    while (readLength + offset <= filesize - readSize) {
+                    while (readLength <= filesize - readSize) {
                         read = randomAccessFile.read(buffer, 0, this.readSize);
                         if (read == -1) break;
                         readLength += read;
                         outStream.write(buffer, 0, read);
+                        listener.process(readLength / (float) filesize);
                     }
-                    if (readLength + offset < filesize) {
-                        read = randomAccessFile.read(buffer, 0, (int) (filesize - (readLength +
-                                offset)));
-                        if (read != -1) outStream.write(buffer, 0, read);
+                    if (readLength < filesize) {
+                        read = randomAccessFile.read(buffer, 0, (int) (filesize - readLength
+                        ));
+                        if (read != -1) {
+                            outStream.write(buffer, 0, read);
+                            readLength += read;
+                        }
                     }
-                    resultInfo = getResultInfo();
 
-                    if (resultInfo == null) {
+                    listener.process(readLength / (float) filesize);
+
+                    resultInfo = getResultInfo();
+                    if (resultInfo == null || resultInfo.code != 1) {
                         listener.failure(toResponseInfo(resultInfo));
                         return;
                     }
 
-                    if (resultInfo.code == 1) {
+                    listener.success(toResponseInfo(resultInfo));
 
-                    }
                 } catch (Exception e) {
                     listener.failure(toResponseInfo(resultInfo));
                 }
@@ -125,16 +133,15 @@ public class SocketBigFileUpload extends IBigFileUpload {
 
     private ResultInfo getResultInfo() {
         ResultInfo resultInfo = null;
-        PushbackInputStream inputStream = null;
         try {
-            inputStream = new PushbackInputStream(socket.getInputStream());
-            byte[] buffer = new byte[512];
+            PushbackInputStream inputStream = new PushbackInputStream(socket.getInputStream());
+            byte[] buffer = new byte[1024];
             int len = inputStream.read(buffer, 0, buffer.length);
             if (len <= 0) {
                 return resultInfo;
             }
             resultInfo = JSON.parseObject(new String(buffer, 0, len), ResultInfo.class);
-        } catch (IOException e) {
+        } catch (Exception e) {
 
         }
         return resultInfo;

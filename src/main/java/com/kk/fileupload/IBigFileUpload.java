@@ -102,7 +102,12 @@ public abstract class IBigFileUpload {
             return null;
         }
         BigInteger bigInt = new BigInteger(1, digest.digest());
-        return bigInt.toString(16);
+        String mdStr = bigInt.toString(16);
+        int slen = 32 - mdStr.length();
+        for (int i = 0; i < slen; i++) {
+            mdStr = 0 + mdStr;
+        }
+        return mdStr;
     }
 
     public abstract void upload();
