@@ -1,13 +1,13 @@
 # 大文件上传
 ## 上传例子
-
 ### socket上传例子
 ```
 TaskUtil.getImpl().runTask(new Runnable() {
             @Override
             public void run() {
                 SocketBigFileUpload.Builder builder = new SocketBigFileUpload.Builder();
-                builder.setFile(new File(Environment.getExternalStorageDirectory() + "/360/test.mp4")).setListener(new IBigFileUpload.BigFileUploadListener() {
+                builder.setFile(new File(Environment.getExternalStorageDirectory() + "/360/test.mp4")).setContext
+                        (MainActivity.this).setListener(new IBigFileUpload.BigFileUploadListener() {
                     @Override
                     public void success(IBigFileUpload.ResonseInfo<String> info) {
                         LogUtil.msg("------->成功");
