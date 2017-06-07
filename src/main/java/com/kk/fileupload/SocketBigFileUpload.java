@@ -32,6 +32,9 @@ public class SocketBigFileUpload extends IBigFileUpload {
     private int port;
     private Socket socket;
 
+
+    private int timeout;
+
     public SocketBigFileUpload(String ip, int port, Builder builder) {
         super(builder);
         this.ip = ip;
@@ -41,6 +44,13 @@ public class SocketBigFileUpload extends IBigFileUpload {
     }
 
     public static class Builder extends IBigFileUpload.Builder {
+        private int timeout = 10 * 1000;
+
+        public Builder setTimeout(int timeout) {
+            this.timeout = timeout;
+            return this;
+        }
+
         public Builder setFile(File bigFile) {
             this.bigFile = bigFile;
             return this;
@@ -51,7 +61,7 @@ public class SocketBigFileUpload extends IBigFileUpload {
             return this;
         }
 
-        public Builder setListener(HttpBigFileUpload.BigFileUploadListener listener) {
+        public Builder setListener(BigFileUploadListener listener) {
             this.listener = listener;
             return this;
         }
@@ -60,7 +70,6 @@ public class SocketBigFileUpload extends IBigFileUpload {
             this.readSize = readSize;
             return this;
         }
-
 
         public SocketBigFileUpload build(String ip, int port) {
             return new SocketBigFileUpload(ip, port, this);
@@ -71,6 +80,7 @@ public class SocketBigFileUpload extends IBigFileUpload {
     public void upload() {
         try {
             socket = new Socket(ip, port);
+            socket.setSoTimeout(timeout);
             OutputStream outStream = socket.getOutputStream();
             outStream.write(toJson().getBytes());
             ResultInfo resultInfo = getResultInfo();
@@ -121,11 +131,13 @@ public class SocketBigFileUpload extends IBigFileUpload {
                     listener.success(toResponseInfo(resultInfo));
 
                 } catch (Exception e) {
+                    e.printStackTrace();
                     listener.failure(toResponseInfo(resultInfo));
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
+            listener.failure(null);
         } finally {
             close();
         }

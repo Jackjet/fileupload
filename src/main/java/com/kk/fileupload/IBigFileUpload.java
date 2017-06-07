@@ -20,7 +20,7 @@ public abstract class IBigFileUpload {
     protected RandomAccessFile randomAccessFile;
     protected String md5Check;     //文件唯一标识
 
-    protected int readSize = 1024; //每次读取大小
+    protected int readSize = 1464; //每次读取大小
     protected BigFileUploadListener listener;
 
     public IBigFileUpload(Builder builder) {
@@ -44,7 +44,7 @@ public abstract class IBigFileUpload {
         protected Context context;
 
         protected File bigFile; //大文件
-        protected int readSize = 1024;//每次读取大小
+        protected int readSize = 1464;//每次读取大小
         protected BigFileUploadListener listener;
     }
 
@@ -53,6 +53,7 @@ public abstract class IBigFileUpload {
         public String msg;
         public long package_index;
         public String url;
+
     }
 
     public static class ResonseInfo<T> {

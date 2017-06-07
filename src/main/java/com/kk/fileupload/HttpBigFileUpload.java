@@ -74,6 +74,11 @@ public class HttpBigFileUpload extends IBigFileUpload {
             return this;
         }
 
+        public Builder setUrl(String url) {
+            this.url = url;
+            return this;
+        }
+
         public Builder setFile(File bigFile) {
             this.bigFile = bigFile;
             return this;
@@ -91,11 +96,6 @@ public class HttpBigFileUpload extends IBigFileUpload {
 
         public Builder setReadSize(int readSize) {
             this.readSize = readSize;
-            return this;
-        }
-
-        public Builder setUrl(String url) {
-            this.url = url;
             return this;
         }
 
