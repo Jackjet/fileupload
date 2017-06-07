@@ -31,16 +31,17 @@ public class SocketBigFileUpload extends IBigFileUpload {
     private String ip;
     private int port;
     private Socket socket;
-
+    private String uuid;
+    private String uid;
 
     private int timeout;
 
-    public SocketBigFileUpload(String ip, int port, Builder builder) {
+    public SocketBigFileUpload(String ip, int port, String uuid, String uid, Builder builder) {
         super(builder);
         this.ip = ip;
         this.port = port;
-
-        setRandomAccessFile();
+        this.uuid = uuid;
+        this.uid = uid;
     }
 
     public static class Builder extends IBigFileUpload.Builder {
@@ -71,8 +72,8 @@ public class SocketBigFileUpload extends IBigFileUpload {
             return this;
         }
 
-        public SocketBigFileUpload build(String ip, int port) {
-            return new SocketBigFileUpload(ip, port, this);
+        public SocketBigFileUpload build(String ip, int port, String uuid, String uid) {
+            return new SocketBigFileUpload(ip, port, uuid, uid, this);
         }
     }
 
@@ -176,7 +177,7 @@ public class SocketBigFileUpload extends IBigFileUpload {
         return "{\"file_name\":\"" + bigFile.getName() + "\", \"file_size\":" + bigFile.length() + ", \"source_id\": " +
                 "\"" +
                 md5Check +
-                "\"}";
+                "\",\"imeil\":\"" + uuid + "\", \"user_id\":\"" + uid + "\"}";
     }
 
 
